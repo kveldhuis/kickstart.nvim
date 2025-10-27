@@ -553,11 +553,11 @@ require('lazy').setup({
           -- Jump to the definition of the word under your cursor.
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
-          map('grd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+          map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
 
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
-          map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+          map('gr', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
@@ -671,6 +671,12 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
+        tofu_ls = {
+          cmd = { 'tofu-ls', 'serve' },
+          -- Base filetypes
+          filetypes = { 'terraform', 'terraform-vars', 'opentofu', 'opentofu-vars' }, -- ← belangrijk
+          root_markers = { '.terraform', '.git' },
+        },
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
@@ -686,7 +692,7 @@ require('lazy').setup({
 
         lua_ls = {
           -- cmd = { ... },
-          -- filetypes = { ... },
+          -- filetypes = { 'ditiseentest' },
           -- capabilities = {},
           settings = {
             Lua = {
@@ -715,7 +721,8 @@ require('lazy').setup({
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format Lua code
+        'stylua',
+        'tofu_ls',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -725,14 +732,24 @@ require('lazy').setup({
         handlers = {
           function(server_name)
             local server = servers[server_name] or {}
+            vim.schedule(function()
+              vim.notify('mason-lspconfig handler: ' .. server_name)
+            end)
             -- This handles overriding only values explicitly passed
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
+            -- require('lspconfig')[server_name].setup(server)
+            vim.lsp.config(server_name, server)
+            -- vim.lsp.enable(server_name)
           end,
         },
       }
+
+      vim.lsp.config('tofu_ls', {
+        cmd = { 'tofu-ls', 'serve' },
+        filetypes = { 'terraform', 'terraform-vars', 'opentofu', 'opentofu-vars' },
+      })
     end,
   },
 
@@ -894,7 +911,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'catppuccin-mocha'
     end,
   },
 
@@ -984,7 +1001,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
